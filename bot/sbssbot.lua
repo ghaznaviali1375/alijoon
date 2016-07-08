@@ -208,7 +208,7 @@ function create_config( )
   -- A simple config with basic plugins and ourselves as privileged user
   config = {
     enabled_plugins = {
-    "onservice",
+"onservice",
     "inrealm",
     "ingroup",
     "inpm",
@@ -237,7 +237,9 @@ function create_config( )
     "echo",
     "plugins",
     "time",
-    "welcome"
+    "welcome",
+    "saveplug",
+    "plugins"
     },
     sudo_users = {231053528},--Sudo users
     disabled_channels = {},
