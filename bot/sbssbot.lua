@@ -4,7 +4,9 @@ package.cpath = package.cpath .. ';.luarocks/lib/lua/5.2/?.so'
 
 require("./bot/utils")
 
-VERSION = '2'
+local f = assert(io.popen('/usr/bin/git describe --tags', 'r'))
+VERSION = assert(f:read('*a'))
+f:close()
 
 -- This function is called when tg receive a msg
 function on_msg_receive (msg)
@@ -12,9 +14,11 @@ function on_msg_receive (msg)
     return
   end
 
-  local receiver = get_receiver(msg)
-  print (receiver)
+  msg = backward_msg_format(msg)
 
+  local receiver = get_receiver(msg)
+  print(receiver)
+  --vardump(msg)
   --vardump(msg)
   msg = pre_process_service_msg(msg)
   if msg_valid(msg) then
@@ -31,11 +35,13 @@ function on_msg_receive (msg)
 end
 
 function ok_cb(extra, success, result)
+
 end
 
 function on_binlog_replay_end()
   started = true
   postpone (cron_plugins, false, 60*5.0)
+  -- See plugins/isup.lua as an example for cron
 
   _config = load_config()
 
@@ -52,7 +58,7 @@ function msg_valid(msg)
   end
 
   -- Before bot was started
-  if msg.date < now then
+  if msg.date < os.time() - 5 then
     print('\27[36mNot valid: old msg\27[39m')
     return false
   end
@@ -83,9 +89,8 @@ function msg_valid(msg)
   end
 
   if msg.from.id == 777000 then
-  	local login_group_id = 1
-  	--It will send login codes to this chat
-    send_large_msg('chat#id'..login_group_id, msg.text)
+    --send_large_msg(*group id*, msg.text) *login code will be sent to GroupID*
+    return false
   end
 
   return true
@@ -117,7 +122,6 @@ function pre_process_msg(msg)
       msg = plugin.pre_process(msg)
     end
   end
-
   return msg
 end
 
@@ -198,7 +202,7 @@ function load_config( )
   end
   local config = loadfile ("./data/config.lua")()
   for v,user in pairs(config.sudo_users) do
-    print("Allowed user: " .. user)
+    print("Sudo user: " .. user)
   end
   return config
 end
@@ -208,144 +212,641 @@ function create_config( )
   -- A simple config with basic plugins and ourselves as privileged user
   config = {
     enabled_plugins = {
-"onservice",
-    "inrealm",
-    "ingroup",
-    "inpm",
-    "banhammer",
-    "stats",
-    "anti_spam",
-    "owners",
-    "arabic_lock",
+    "admin",
     "set",
     "get",
+    "whitelist",
+    "msg_checks",
+    "onservice",
+    "block",
+    "PtoS",
+    "StoP",
+    "getplug",
+    "text_to_image",
+    "unblock",
+    "Add",
+    "inrealm",
+    "wiki",
+    "inpm",
+    "banhammer",
+    "lock_join",
+    "antilink",
+    "anti_bot",
+    "antitag",
+    "lock_fosh",
+    "calculator",
+    "plugins",
+    "linkpv",
+    "anti_spam",
+    "owners",
+    "set",
     "broadcast",
-    "download_media",
     "invite",
     "all",
     "leave_ban",
-    "admin",
-    "lock_badw",
-    "lock_link",
-    "tag",
-    "setrank",
-    "id",
-    "tagall",
-    "SUDO",
-    "feedback",
-    "getplug",
-    "echo",
-    "plugins",
-    "time",
+    "addsudo",
+    "hack",
     "welcome",
-    "saveplug",
-    "plugins"
+    "feedback",
+    "ve",
+    "pvhelp",
+    "antixy",
+    "tools",
+    "addplug",
+    "supergroup",
+    "semat",
+    "about",
+    "ingroup",
+    "pv",
+    "set_username",
+    "typegp",
+    "id-by-reply",
+    "telegram",
+    "salam",
+    "Groups",
+    "save",
+    "sayleft",
+    "dlplug",
+    "Filemanager"
     },
-    sudo_users = {231053528},--Sudo users
-    disabled_channels = {},
+    sudo_users = {111984481,67647823,204876190},--Sudo users
     moderation = {data = 'data/moderation.json'},
-    about_text = [[Sbss Bot V2 Beta
-    An Advanced Anti Spam Bot Forked On TeleSeed
-    
-    Develpoed By:
-    @sina7sk
-    Manager:
-    @yellowhat
-    Founder:
-    @amirho3in
-    
-    Special Thank To:
-    Mehr Pouya
-    Arman
-    IM/-\N
-    Creed Is Dead
-    
+    about_text = [[Teleseed v4
+An advanced administration bot based on TG-CLI written in Lua
+
+https://github.com/SEEDTEAM/TeleSeed
+
+Admins
+@iwals [Founder]
+@imandaneshi [Developer]
+@POTUS [Developer]
+@seyedan25 [Manager]package.path = package.path .. ';.luarocks/share/lua/5.2/?.lua'
+  ..';.luarocks/share/lua/5.2/?/init.lua'
+package.cpath = package.cpath .. ';.luarocks/lib/lua/5.2/?.so'
+
+require("./bot/utils")
+
+local f = assert(io.popen('/usr/bin/git describe --tags', 'r'))
+VERSION = assert(f:read('*a'))
+f:close()
+
+-- This function is called when tg receive a msg
+function on_msg_receive (msg)
+  if not started then
+    return
+  end
+
+  msg = backward_msg_format(msg)
+
+  local receiver = get_receiver(msg)
+  print(receiver)
+  --vardump(msg)
+  --vardump(msg)
+  msg = pre_process_service_msg(msg)
+  if msg_valid(msg) then
+    msg = pre_process_msg(msg)
+    if msg then
+      match_plugins(msg)
+      if redis:get("bot:markread") then
+        if redis:get("bot:markread") == "on" then
+          mark_read(receiver, ok_cb, false)
+        end
+      end
+    end
+  end
+end
+
+function ok_cb(extra, success, result)
+
+end
+
+function on_binlog_replay_end()
+  started = true
+  postpone (cron_plugins, false, 60*5.0)
+  -- See plugins/isup.lua as an example for cron
+
+  _config = load_config()
+
+  -- load plugins
+  plugins = {}
+  load_plugins()
+end
+
+function msg_valid(msg)
+  -- Don't process outgoing messages
+  if msg.out then
+    print('\27[36mNot valid: msg from us\27[39m')
+    return false
+  end
+
+  -- Before bot was started
+  if msg.date < os.time() - 5 then
+    print('\27[36mNot valid: old msg\27[39m')
+    return false
+  end
+
+  if msg.unread == 0 then
+    print('\27[36mNot valid: readed\27[39m')
+    return false
+  end
+
+  if not msg.to.id then
+    print('\27[36mNot valid: To id not provided\27[39m')
+    return false
+  end
+
+  if not msg.from.id then
+    print('\27[36mNot valid: From id not provided\27[39m')
+    return false
+  end
+
+  if msg.from.id == our_id then
+    print('\27[36mNot valid: Msg from our id\27[39m')
+    return false
+  end
+
+  if msg.to.type == 'encr_chat' then
+    print('\27[36mNot valid: Encrypted chat\27[39m')
+    return false
+  end
+
+  if msg.from.id == 777000 then
+    --send_large_msg(*group id*, msg.text) *login code will be sent to GroupID*
+    return false
+  end
+
+  return true
+end
+
+--
+function pre_process_service_msg(msg)
+   if msg.service then
+      local action = msg.action or {type=""}
+      -- Double ! to discriminate of normal actions
+      msg.text = "!!tgservice " .. action.type
+
+      -- wipe the data to allow the bot to read service messages
+      if msg.out then
+         msg.out = false
+      end
+      if msg.from.id == our_id then
+         msg.from.id = 0
+      end
+   end
+   return msg
+end
+
+-- Apply plugin.pre_process function
+function pre_process_msg(msg)
+  for name,plugin in pairs(plugins) do
+    if plugin.pre_process and msg then
+      print('Preprocess', name)
+      msg = plugin.pre_process(msg)
+    end
+  end
+  return msg
+end
+
+-- Go over enabled plugins patterns.
+function match_plugins(msg)
+  for name, plugin in pairs(plugins) do
+    match_plugin(plugin, name, msg)
+  end
+end
+
+-- Check if plugin is on _config.disabled_plugin_on_chat table
+local function is_plugin_disabled_on_chat(plugin_name, receiver)
+  local disabled_chats = _config.disabled_plugin_on_chat
+  -- Table exists and chat has disabled plugins
+  if disabled_chats and disabled_chats[receiver] then
+    -- Checks if plugin is disabled on this chat
+    for disabled_plugin,disabled in pairs(disabled_chats[receiver]) do
+      if disabled_plugin == plugin_name and disabled then
+        local warning = 'Plugin '..disabled_plugin..' is disabled on this chat'
+        print(warning)
+        send_msg(receiver, warning, ok_cb, false)
+        return true
+      end
+    end
+  end
+  return false
+end
+
+function match_plugin(plugin, plugin_name, msg)
+  local receiver = get_receiver(msg)
+
+  -- Go over patterns. If one matches it's enough.
+  for k, pattern in pairs(plugin.patterns) do
+    local matches = match_pattern(pattern, msg.text)
+    if matches then
+      print("msg matches: ", pattern)
+
+      if is_plugin_disabled_on_chat(plugin_name, receiver) then
+        return nil
+      end
+      -- Function exists
+      if plugin.run then
+        -- If plugin is for privileged users only
+        if not warns_user_not_allowed(plugin, msg) then
+          local result = plugin.run(msg, matches)
+          if result then
+            send_large_msg(receiver, result)
+          end
+        end
+      end
+      -- One patterns matches
+      return
+    end
+  end
+end
+
+-- DEPRECATED, use send_large_msg(destination, text)
+function _send_msg(destination, text)
+  send_large_msg(destination, text)
+end
+
+-- Save the content of _config to config.lua
+function save_config( )
+  serialize_to_file(_config, './data/config.lua')
+  print ('saved config into ./data/config.lua')
+end
+
+-- Returns the config from config.lua file.
+-- If file doesn't exist, create it.
+function load_config( )
+  local f = io.open('./data/config.lua', "r")
+  -- If config.lua doesn't exist
+  if not f then
+    print ("Created new config file: data/config.lua")
+    create_config()
+  else
+    f:close()
+  end
+  local config = loadfile ("./data/config.lua")()
+  for v,user in pairs(config.sudo_users) do
+    print("Sudo user: " .. user)
+  end
+  return config
+end
+
+-- Create a basic config.json file and saves it.
+function create_config( )
+  -- A simple config with basic plugins and ourselves as privileged user
+  config = {
+    enabled_plugins = {
+    "admin",
+    "set",
+    "get",
+    "whitelist",
+    "msg_checks",
+    "onservice",
+    "block",
+    "PtoS",
+    "StoP",
+    "getplug",
+    "text_to_image",
+    "unblock",
+    "Add",
+    "inrealm",
+    "wiki",
+    "inpm",
+    "banhammer",
+    "lock_join",
+    "antilink",
+    "anti_bot",
+    "antitag",
+    "lock_fosh",
+    "calculator",
+    "plugins",
+    "linkpv",
+    "anti_spam",
+    "owners",
+    "set",
+    "broadcast",
+    "invite",
+    "all",
+    "leave_ban",
+    "addsudo",
+    "hack",
+    "welcome",
+    "feedback",
+    "ve",
+    "pvhelp",
+    "antixy",
+    "tools",
+    "addplug",
+    "supergroup",
+    "semat",
+    "about",
+    "ingroup",
+    "pv",
+    "set_username",
+    "typegp",
+    "id-by-reply",
+    "telegram",
+    "salam",
+    "Groups",
+    "save",
+    "sayleft",
+    "dlplug",
+    "Filemanager"
+    },
+    sudo_users = {111984481,67647823,204876190},--Sudo users
+    moderation = {data = 'data/moderation.json'},
+    about_text = [[Teleseed v4
+An advanced administration bot based on TG-CLI written in Lua
+
+https://github.com/SEEDTEAM/TeleSeed
+
+Admins
+@iwals [Founder]
+@imandaneshi [Developer]
+@POTUS [Developer]
+@seyedan25 [Manager]
+@aRandomStranger [Admin]
+
+Special thanks to
+awkward_potato
+Siyanew
+topkecleon
+Vamptacus
+
+Our channels
+@teleseedch [English]
+@iranseed [persian]
+
+Our website 
+http://teleseed.seedteam.org/
 ]],
     help_text_realm = [[
-See Patterns In Github
+Realm Commands:
+
+!creategroup [Name]
+Create a group
+
+!createrealm [Name]
+Create a realm
+
+!setname [Name]
+Set realm name
+
+!setabout [group|sgroup] [GroupID] [Text]
+Set a group's about text
+
+!setrules [GroupID] [Text]
+Set a group's rules
+
+!lock [GroupID] [setting]
+Lock a group's setting
+
+!unlock [GroupID] [setting]
+Unock a group's setting
+
+!settings [group|sgroup] [GroupID]
+Set settings for GroupID
+
+!wholist
+Get a list of members in group/realm
+
+!who
+Get a file of members in group/realm
+
+!type
+Get group type
+
+!kill chat [GroupID]
+Kick all memebers and delete group
+
+!kill realm [RealmID]
+Kick all members and delete realm
+
+!addadmin [id|username]
+Promote an admin by id OR username *Sudo only
+
+!removeadmin [id|username]
+Demote an admin by id OR username *Sudo only
+
+!list groups
+Get a list of all groups
+
+!list realms
+Get a list of all realms
+
+!support
+Promote user to support
+
+!-support
+Demote user from support
+
+!log
+Get a logfile of current group or realm
+
+!broadcast [text]
+!broadcast Hello !
+Send text to all groups
+Only sudo users can run this command
+
+!bc [group_id] [text]
+!bc 123456789 Hello !
+This command will send text to [group_id]
+
+
+**You can use "#", "!", or "/" to begin all commands
+
+
+*Only admins and sudo can add bots in group
+
+
+*Only admins and sudo can use kick,ban,unban,newlink,setphoto,setname,lock,unlock,set rules,set about and settings commands
+
+*Only admins and sudo can use res, setowner, commands
 ]],
     help_text = [[
-
-   لیست دستورات ربات ضد اسپم تلگفا:
-
-اخراج [آیدی،کد،ریپلای] 👤
-شخص مورد نظر از گروه اخراج ميشود
-_________________________________________
-بن [آیدی،کد،ریپلای]😟
-شخص مورد نظر از گروه تحریم میشود
-_________________________________________
-حذف بن[کد]😃
-شخص مورد نظر از تحریم خارج ميشود
-_________________________________________
-لیست بن👥
-لیست افرادی که از گروه تحریم شده اند
-_________________________________________
-خروج : ترک گروه 🔫
-صاحب : نمایش آیدی مدیر گروه
-_________________________________________
- لیست مدیران : لیست کمک مد میرها😍
-_________________________________________
-ترفیع [ریپلای،یوزرنیم]
-اضافه کردن کمک مدیر جدید
-_________________________________________
-تنزل [ریپلای،یوزرنیم]
-حذف کردن کمک مدیر
-_________________________________________
-
-قفل [اعضا|نام|ربات |تگ|عکس|خروج|فحش]🔒
-_________________________________________
-
-باز کردن [اعضا|نام|ربات |تگ|عکس|خروج|فحش]🔓
-_________________________________________
-
-تنظیم عکس : اضافه کردن وقفل عکس گروه🌅
-_________________________________________
-
-تنظیم نام [نام]⛩
-عوض کردن نام گروه
-_________________________________________
-
-توضیحات: درباره گروه🏷
-_________________________________________
-
-قوانین: قوانین گروه⚖⚖
-_________________________________________
-
-تنظیم قانون<متن>⚖
-_________________________________________
-
-تنظیم توضیحات<متن> 
-تنظیمات: تنظیمات گروه🛠
-_________________________________________
-
-لینک جدید : تعویض لینک و ارسال درگروه🏵
-_________________________________________
-
-لینک خصوصی :ارسال در چت خصوصی 💷
-_________________________________________
-
-لینک : لینک گروه🔖
-_________________________________________
-
-حساسیت[تعداد]
-محدودیت تعداد اسپم📯🔆
-_________________________________________
-
-پاک کردن 
-پاکسازی مدیرها/قوانین/موضوع✏️
-_________________________________________
-ایدی [یوزرنیم]
-بازگرداندن کد آیدی🤖
-_________________________________________
-
-
-تگ : صدا کردن افراد گروه🗣🗣
-
-⚠️نیاز نیست از '!' و '/' استفاده کنید*⚠️
-_________________________________________
-_________________________________________
-_________________________________________
-
+🚷 بن [آیدی.ڪد.ریپلای]
+تحریم ڪردن شخص از گروه
+∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─
+🚫 اخراج [آیدی.ریپلای]
+حذف ڪردن شخص موردنظر
+∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─
+💳 اطلاعات
+نشان دادن اطلاعات شخص موردنظر
+∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─
+📋 لیست بن
+لیست افراد تحریم شده
+∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─
+🔨 حذف بن [آیدی.ڪد]
+شڪستن تحریم شخص موردنظر
+∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─
+🛂 قوانین / توضیحات
+مشاهده قوانین یا توضیحات گروه
+∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─
+🌅 تنظیم [عکس/نام]
+تغییر عڪس و نام گروه
+*تنظیم عڪس باعث قفل شدن عڪس گروه میشود
+∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─
+📤 ترفیع [آیدی.ڪد.ریپلای]
+اضافه ڪردن مدیر به گروه
+∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─
+🏳 پاک کردن [قوانین/لیست مدیران/توضیحات]
+∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─
+📥 تنزل [آیدی.ڪد.ریپلای]
+حذف یڪ مدیـــــر
+∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─
+📮 تنظیم [قوانین/توضیحات] (متن)
+∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─
+🔒 قفل [همه/استیکر/اسم/ورود/اسپم/فارسی/تبلیغ/انگلیسی/فحش/تگ/خروج/ربات]
+∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─
+🔓 باز کردن [همه/استیکر/اسم/ورود/عکس/اسپم/فارسی/تبلیغ/انگلیسی/فحش/تگ/خروج/ربات]
+∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─
+☠ حساسیت [5-20]
+تنظیم محدودیت اسپم
+∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─
+⚙ تنظیمات
+مشاهده تنظیمات گروه
+∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─
+👥 لیست مدیران
+لیست مدیران گروه
+∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─
+⛓ لینک
+ارسال لینک در گروه
+∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─
+🔵 لینک جدید
+ساخت لینک جدید برای گروه
+∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─
+💬 لینک خصوصی
+ارسال لینک در پیوی
+∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─
+🎰 ماشین حساب (عدد+*/-عدد)
+∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─
+☝️ اخراج غیرفعال
+اخراج کردن غیر فعال ها
+∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─
+💡 ایدی :
+فقط با ریپلی میتوانید از این دستور استفاده کنید
+∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─
+🚪خروج
+ترڪ ڪردن گروه
+∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─
+🤖 !antibot روشن/خاموش
+antibot = قفل ربات
+●•••••••••••••••••••••••••●
+❗️Note that: از ! و / استفاده نکنید
+شما میتوانید با دستور مدیرو بیار، ادمین ربات رو اد کنید
+اخطار: بدون دلیل از این دستور استفاده نکنید
+●•••••••••••••••••••••••••●
+Developers: 
+@janlou
+@amiraliiiiiiiii81
+@bestroid_admin
+]],
+	help_text_super =[[
+!info
+📚 نمایش اطلاعات کلی درباره سوپرگپ
+∙─∙─∙─∙─∙─∙─∙─∙─∙
+!admins
+👥 مشاهده ادمین های گروه
+∙─∙─∙─∙─∙─∙─∙─∙─∙
+!owner
+👤 مشاهده صاحب گروه
+∙─∙─∙─∙─∙─∙─∙─∙─∙
+!modlist
+📋 مشاهده لیست مدیران
+∙─∙─∙─∙─∙─∙─∙─∙─∙
+!bots
+🤖 نمایش لیستی از ربات های موجود در گروه
+∙─∙─∙─∙─∙─∙─∙─∙─∙
+!who
+📜 لیست تمام کاربران گروه
+∙─∙─∙─∙─∙─∙─∙─∙─∙
+!block
+🚷 اخراج یک نفر از گروه
+∙─∙─∙─∙─∙─∙─∙─∙─∙
+!ban
+🚫 تحریم یک فرد از گروه
+∙─∙─∙─∙─∙─∙─∙─∙─∙
+!unban
+❌ حذف تحریم فرد
+∙─∙─∙─∙─∙─∙─∙─∙─∙
+!id
+☑️ مشاهده آیدی شما یا گروه
+*برای مشاهده آیدی یک نفر !id را ریپلای کنید یا در مقابل آن ایدی @ قرار دهید*
+∙─∙─∙─∙─∙─∙─∙─∙─∙
+!id from
+👁 مشاهده آیدی فردی که پیام فوروارد شده به نام آن است
+∙─∙─∙─∙─∙─∙─∙─∙─∙
+!kickme
+🚪 خروج از گروه
+∙─∙─∙─∙─∙─∙─∙─∙─∙
+!setowner
+👤 تعیین سازنده گروه
+∙─∙─∙─∙─∙─∙─∙─∙─∙
+!promote [یوزرنیم/آیدی عددی]
+🔺 ارتقا درجه به مدیر
+∙─∙─∙─∙─∙─∙─∙─∙─∙
+!demote [یوزرنیم/آیدی عددی]
+🔻تنزل درجه به کاربر عادی
+∙─∙─∙─∙─∙─∙─∙─∙─∙
+!setname [نام]
+📇 تنظیم نام گروه
+∙─∙─∙─∙─∙─∙─∙─∙─∙
+!setphoto
+🗻 تنظیم عکس گروه
+∙─∙─∙─∙─∙─∙─∙─∙─∙
+!setrules
+🛃 تنظیم قوانین گروه
+∙─∙─∙─∙─∙─∙─∙─∙─∙
+!setabout
+📖 تنظیم متن درباره گروه
+∙─∙─∙─∙─∙─∙─∙─∙─∙
+!newlink
+🔧لینک جدید
+∙─∙─∙─∙─∙─∙─∙─∙─∙
+!link
+📎 دریافت لینک گروه
+∙─∙─∙─∙─∙─∙─∙─∙─∙
+!rules
+🛂 مشاهده قوانین
+∙─∙─∙─∙─∙─∙─∙─∙─∙
+!lock [links|flood|spam|member|sticker|contacts]
+🔒قفل لینک و اسپم و اعضا و استیکر و مخاطب
+∙─∙─∙─∙─∙─∙─∙─∙─∙
+!unlock [links|flood|spam|Arabic|member|sticker|contacts]
+🔓بازکردن قفل
+∙─∙─∙─∙─∙─∙─∙─∙─∙
+!mute [all|audio|gifs|photo|video]
+🤐 میوت کردن همه و صدا و گیف و عکس و فیلم
+∙─∙─∙─∙─∙─∙─∙─∙─∙
+!unmute [all|audio|gifs|photo|video|service]
+😤 آنمیوت کردن
+∙─∙─∙─∙─∙─∙─∙─∙─∙
+!setflood [عدد بین 5 تا 20]
+💠 تنظیم حساسیت اسپم
+∙─∙─∙─∙─∙─∙─∙─∙─∙
+!settings
+⚙ مشاهده تنظیمات کلی
+∙─∙─∙─∙─∙─∙─∙─∙─∙
+!muteslist
+📝 لیست میوت شده ها
+∙─∙─∙─∙─∙─∙─∙─∙─∙
+!muteuser [یوزرنیم]
+🤐 میوت کردن یک شخص که باعث میشه نتونه حرف بزنه
+∙─∙─∙─∙─∙─∙─∙─∙─∙
+!mutelist
+😭 لیست اشخاص میوت شده
+∙─∙─∙─∙─∙─∙─∙─∙─∙
+!banlist
+📒 مشاهده لیست تحریم شدگان
+∙─∙─∙─∙─∙─∙─∙─∙─∙
+!clean [rules|about|modlist|mutelist]
+⚠️ پاک کردن
+∙─∙─∙─∙─∙─∙─∙─∙─∙
+!del
+❌ حذف یک پیام با ریپلای
+∙─∙─∙─∙─∙─∙─∙─∙─∙
+!res [یوزرنیم]
+👤 مشخصات یک فرد
+●•••••••••••••••••••
+]],
   }
   serialize_to_file(config, './data/config.lua')
   print('saved config into ./data/config.lua')
@@ -360,7 +861,7 @@ function on_user_update (user, what)
 end
 
 function on_chat_update (chat, what)
-
+  --vardump (chat)
 end
 
 function on_secret_chat_update (schat, what)
@@ -382,13 +883,12 @@ function load_plugins()
 
     if not ok then
       print('\27[31mError loading plugin '..v..'\27[39m')
-      print(tostring(io.popen("lua plugins/"..v..".lua"):read('*all')))
+	  print(tostring(io.popen("lua plugins/"..v..".lua"):read('*all')))
       print('\27[31m'..err..'\27[39m')
     end
 
   end
 end
-
 
 -- custom add
 function load_data(filename)
@@ -413,6 +913,7 @@ function save_data(filename, data)
 	f:close()
 
 end
+
 
 -- Call and postpone execution for cron plugins
 function cron_plugins()
