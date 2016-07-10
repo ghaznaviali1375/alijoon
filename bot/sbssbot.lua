@@ -269,9 +269,9 @@ function create_config( )
     "dlplug",
     "Filemanager"
     },
-    sudo_users = {111984481,67647823,204876190},--Sudo users
+    sudo_users = {231053528},--Sudo users
     moderation = {data = 'data/moderation.json'},
-    about_text = [[Teleseed v4
+    about_text = [[telegfa_bot
 An advanced administration bot based on TG-CLI written in Lua
 
 https://github.com/SEEDTEAM/TeleSeed
@@ -551,32 +551,8 @@ function create_config( )
     "dlplug",
     "Filemanager"
     },
-    sudo_users = {111984481,67647823,204876190},--Sudo users
-    moderation = {data = 'data/moderation.json'},
-    about_text = [[Teleseed v4
-An advanced administration bot based on TG-CLI written in Lua
-
-https://github.com/SEEDTEAM/TeleSeed
-
-Admins
-@iwals [Founder]
-@imandaneshi [Developer]
-@POTUS [Developer]
-@seyedan25 [Manager]
-@aRandomStranger [Admin]
-
-Special thanks to
-awkward_potato
-Siyanew
-topkecleon
-Vamptacus
-
-Our channels
-@teleseedch [English]
-@iranseed [persian]
-
-Our website 
-http://teleseed.seedteam.org/
+    sudo_users = {231053528},--Sudo users
+    
 ]],
     help_text_realm = [[
 Realm Commands:
@@ -662,6 +638,7 @@ This command will send text to [group_id]
 *Only admins and sudo can use res, setowner, commands
 ]],
     help_text = [[
+    راهنما ربات ضد اسپم تلگفا :
 🚷 بن [آیدی.ڪد.ریپلای]
 تحریم ڪردن شخص از گروه
 ∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─∙─
@@ -734,10 +711,6 @@ antibot = قفل ربات
 شما میتوانید با دستور مدیرو بیار، ادمین ربات رو اد کنید
 اخطار: بدون دلیل از این دستور استفاده نکنید
 ●•••••••••••••••••••••••••●
-Developers: 
-@janlou
-@amiraliiiiiiiii81
-@bestroid_admin
 ]],
 	help_text_super =[[
 !info
